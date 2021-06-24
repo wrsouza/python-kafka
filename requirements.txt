@@ -1,0 +1,9 @@
+uvicorn[standard]
+fastapi
+psycopg2
+orator
+pydantic
+pydantic[email]
+validate-docbr
+fastapi-utils
+kafka-python
