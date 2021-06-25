@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update && \
-    apt-get install build-essencial librdkafka-dev -y
+    apt-get install build-essential librdkafka-dev -y
 
 WORKDIR /app
 ENV PYTHONPATH /app

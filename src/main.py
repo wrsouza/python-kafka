@@ -1,4 +1,4 @@
-import random
+import random, time
 from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
@@ -74,8 +74,6 @@ class ConnectionManager:
 
 
 manager = ConnectionManager()
-producer = KafkaProducer(bootstrap_servers='localhost:9092', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
-consumer = KafkaConsumer('valor', bootstrap_servers='localhost:9092')
 
 
 @app.get("/")
@@ -92,6 +90,7 @@ async def store(text: str):
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: int):
     await manager.connect(websocket)
+    consumer = KafkaConsumer('valor', bootstrap_servers='localhost:9092')
     try:
         while True:
             data = await websocket.receive_text()
@@ -102,18 +101,29 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         await manager.broadcast(f"Client #{client_id} left the chat")
 
 
+async def send_message(text: str):
+    await manager.broadcast(f"Cron Job says: {text}")
+
+
 @app.on_event("startup")
-@repeat_every(seconds=1)
-async def consumer_kafka() -> None:
+def consumer_kafka():
+    consumer = KafkaConsumer('valor', bootstrap_servers='host.docker.internal:9092')
+
     for msg in consumer:
-        await manager.broadcast(f"Cron Tasks: #{msg}")
+        send_message(msg)
+        print(msg)
     
 
-
 @app.on_event("startup")
-@repeat_every(seconds=1)
-async def producer_kafka() -> None:
-    data = { 'bovespa': random.randint(5, 15) }
-    producer.send('valor', key=b'book', value=data)
-    # producer.flush()
+def producer_kafka():
+    #value_serializer=lambda v: json.dumps(v).encode('utf-8')
+    producer = KafkaProducer(bootstrap_servers='host.docker.internal:9092')
+
+    while True:
+        #data = { 'bovespa': random.randint(5, 15) }
+        n = random.randint(5, 15)
+        data = "test {n}"
+        producer.send('valor', value=data)
+        producer.flush()
+        time.sleep(3)
     
